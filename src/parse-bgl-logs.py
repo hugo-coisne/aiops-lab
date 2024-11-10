@@ -21,18 +21,20 @@ log_pattern = re.compile(
 
 linecount=0
 limit = 10000000
+
+
 with open('log/BGL.log', 'r', encoding='utf-8') as log_file:
     for line in log_file:
-        # Remove any leading/trailing whitespace from the line
         line = line.strip()
         match = log_pattern.match(line)
         if match:
             linecount+=1
             if linecount > limit:
                 break
-            log_content = match.group("Content")  # Extract the Content field
+            log_content = match.group("Content")
             result = drain_parser.add_log_message(log_content)
 print('first parsing done')
+
 log_data = []
 with open('log/BGL.log', 'r', encoding='utf-8') as log_file:
     for log in log_file:
@@ -50,10 +52,10 @@ with open('log/BGL.log', 'r', encoding='utf-8') as log_file:
                 "Component": component,
                 "Level": level,
                 "Content": content,
+                "Matched Template": result.get_template(),
                 "Cluster ID": result.cluster_id
             }
 
-            # Append the dictionary to the list
             log_data.append(log_entry)
 
 
