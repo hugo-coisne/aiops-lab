@@ -19,13 +19,12 @@ log_pattern = re.compile(
 i = 0
 with open('extracted_data/HDFS.log', 'r') as log_file:
     for line in log_file:
-        # Remove any leading/trailing whitespace from the line
         line = line.strip()
         match = log_pattern.match(line)
         if match:
             i+=1
             print(i)
-            log_content = match.group("Content")  # Extract the Content field
+            log_content = match.group("Content")
             result = drain_parser.add_log_message(log_content)
 
 log_data = []
