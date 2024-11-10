@@ -3,7 +3,7 @@ import os.path
 import shutil
 
 # clear destination directory
-dest_dir = 'extracted_data'
+dest_dir = 'log'
 if os.path.exists(dest_dir):
   shutil.rmtree(dest_dir)
 
