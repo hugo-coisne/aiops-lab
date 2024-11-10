@@ -1,5 +1,6 @@
-*.log
-*.zip
-*.csv
+*.log*
+*.zip*
+*.csv*
 src/tempCodeRunnerFile.py
 playground.py
+__pycache__/
