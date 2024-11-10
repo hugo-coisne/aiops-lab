@@ -46,6 +46,8 @@ with open('log/BGL.log', 'r', encoding='utf-8') as log_file:
             level = match.group("Level")
             content = match.group("Content")
 
+            result = drain_parser.match(content)
+
             log_entry = {
                 "Node": node,
                 "FullTimestamp": full_timestamp,

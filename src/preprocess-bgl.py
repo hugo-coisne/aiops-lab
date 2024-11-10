@@ -1,13 +1,9 @@
 import pandas as pd
-import tools
-
 
 # Load the parsed logs from the CSV file
 df = pd.read_csv('csv/BGL.csv')
 
-df['FullTimeStamp'].map(tools.convertToDatetime)
-
-df['Datetime'] = pd.to_datetime(df['FullTimeStamp'])
+df['Datetime'] = pd.to_datetime(df['FullTimestamp'], format='%Y-%m-%d-%H.%M.%S.%f')
 
 # Sort the DataFrame by datetime to ensure it's ordered correctly
 df = df.sort_values(by='Datetime')
@@ -42,7 +38,7 @@ def split_and_aggregate_by_cluster(df, time_interval='30T', error_threshold=5, a
                 cluster_counts.at[index, 'Anomaly'] = '1'
         else:
             # Check if any cluster exceeds the threshold
-            if row.sum() >= error_threshold:
+            if sum([int(el) for el in list(row)]) >= error_threshold:
                 cluster_counts.at[index, 'Anomaly'] = '1'
 
     # Drop the columns corresponding to the Cluster IDs in anomaly_clusters
@@ -52,11 +48,11 @@ def split_and_aggregate_by_cluster(df, time_interval='30T', error_threshold=5, a
     return cluster_counts
 
 # Set the time interval to split the logs (e.g., '30T' for 30 minutes)
-time_interval = '30T'  # Change to your preferred interval
+time_interval = '1d'  # Change to your preferred interval
 
 # Define the anomaly conditions (specific clusters or thresholds)
-anomaly_clusters = [10]  # Define the Cluster IDs that you consider anomalous
-error_threshold = 3  # If the sum of occurrences of these clusters in a chunk exceeds this, label as anomaly
+anomaly_clusters = None  # Define the Cluster IDs that you consider anomalous
+error_threshold = 24*60*3  # If the sum of occurrences of these clusters in a chunk exceeds this, label as anomaly
 
 # Split and aggregate the DataFrame into chunks based on the specified time interval
 result_df = split_and_aggregate_by_cluster(df, time_interval, error_threshold, anomaly_clusters)
@@ -66,6 +62,7 @@ result_df.reset_index(inplace=True)
 
 # Display the resulting DataFrame
 print(result_df)
+print(result_df['Anomaly'].map(int).sum())
 
 # Optionally, save the result to a new CSV file
-result_df.to_csv('parsed-toy-data-aggregated.csv', index=False)
+result_df.to_csv('csv/BGL-aggregated.csv', index=False)
