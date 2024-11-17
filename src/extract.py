@@ -2,20 +2,22 @@ import zipfile
 import os.path
 import shutil
 
-# clear destination directory
-dest_dir = 'log'
-if os.path.exists(dest_dir):
-  shutil.rmtree(dest_dir)
+dest_dir = '../log'
+zips_path = '../zips'
 
-# get all zip files in zips directory
-zips_path = "zips"
-zip_list = os.listdir(zips_path)
+def allZips():
+  # clear destination directory
+  if os.path.exists(dest_dir):
+    shutil.rmtree(dest_dir)
 
-# extract all zip files to destination directory
-for i in zip_list:
-  with zipfile.ZipFile(f'{zips_path}/{i}', 'r') as zip_ref:
-    for j in zip_ref.namelist():
-      if j[-4:]=='.log': # extract only .log files
-        zip_ref.extract(j, dest_dir) # to destination dir
+  # get all zip files in zips directory
+  zip_list = os.listdir(zips_path)
 
-print('done')
+  # extract all zip files to destination directory
+  for i in zip_list:
+    with zipfile.ZipFile(f'{zips_path}/{i}', 'r') as zip_ref:
+      for j in zip_ref.namelist():
+        if j[-4:]=='.log': # extract only .log files
+          zip_ref.extract(j, dest_dir) # to destination dir
+
+  print('done')
