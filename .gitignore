@@ -1,3 +1,6 @@
+.vscode/*
+*/.idea/*
+src/.idea
 *.log*
 *.zip*
 *.csv*
