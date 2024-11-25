@@ -4,16 +4,13 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score, precision_score, recall_score, roc_auc_score
 
-# Load the data
-df = pd.read_csv('csv/BGL-aggregated.csv')
-
-# Ensure the Datetime column is in datetime format
-df['Datetime'] = pd.to_datetime(df['Datetime'])
+# Load the preprocessed
+df = pd.read_csv('csv/BGL-aggregated2.csv')
 
 # Sort the data by Datetime to ensure it's time-ordered
-df = df.sort_values(by='Datetime')
+df = df.sort_values(by='Window Start')
 
-# Split the data into 60% training, 20% validation, and 20% testing
+# 60 / 20 / 20
 train_proportion = .6
 val_proportion = .2
 train_size = int(train_proportion * len(df))
@@ -25,29 +22,23 @@ val_df = df.iloc[train_size:train_size + val_size]
 test_df = df.iloc[train_size + val_size:]
 
 # Separate features and labels
-X_train = train_df.drop(columns=['Datetime', 'Anomaly'])  # Features
+X_train = train_df.drop(columns=['Window Start', 'Window End', 'Anomaly'])  # Features
 y_train = train_df['Anomaly'].astype(int)  # Labels
 
-X_val = val_df.drop(columns=['Datetime', 'Anomaly'])
+X_val = val_df.drop(columns=['Window Start', 'Window End', 'Anomaly'])
 y_val = val_df['Anomaly'].astype(int)
 
-X_test = test_df.drop(columns=['Datetime', 'Anomaly'])
+X_test = test_df.drop(columns=['Window Start', 'Window End', 'Anomaly'])
 y_test = test_df['Anomaly'].astype(int)
 
-# Train Random Forest
+# Train
 rf_model = RandomForestClassifier()
 rf_model.fit(X_train, y_train)
 rf_pred = rf_model.predict(X_test)
 
-# Train Logistic Regression
 lr_model = LogisticRegression(max_iter=1000)
 lr_model.fit(X_train, y_train)
 lr_pred = lr_model.predict(X_test)
-
-# Train Decision Tree
-dt_model = DecisionTreeClassifier()
-dt_model.fit(X_train, y_train)
-dt_pred = dt_model.predict(X_test)
 
 # Evaluation function
 def evaluate_model(y_true, y_pred, model_name):
@@ -66,4 +57,3 @@ def evaluate_model(y_true, y_pred, model_name):
 # Evaluate each model on the test set
 evaluate_model(y_test, rf_pred, "Random Forest")
 evaluate_model(y_test, lr_pred, "Logistic Regression")
-evaluate_model(y_test, dt_pred, "Decision Tree")

@@ -50,7 +50,7 @@ def sliding_window_aggregate(df, window_size='1h', step_size='5min'):
         # Filter rows within the current window
         window_df = df.loc[current_start:current_end]
         # print('window_df', window_df)
-        cluster_counts = window_df.groupby('Event ID').size()
+        cluster_counts = window_df.groupby('Event').size()
         # print("cluster_counts, first window\n", cluster_counts)
         window_anomalies = window_df['Anomaly'].sum()
         # print('window_anomalies', window_anomalies)
