@@ -1,55 +1,45 @@
 import pandas as pd
 
-df = pd.read_csv('parsed-hdfs-data.csv')
+# Charger les fichiers CSV
+event_data = pd.read_csv('parsed-hdfs-data.csv')  # Contient BlockId, Date, Time, Event ID
+anomaly_labels = pd.read_csv('anomaly_label.csv')  # Contient BlockId et Label
 
-df['Datetime'] = pd.to_datetime(df['Date'].astype(str) + ' ' + df['Time'].astype(str), format='%y%m%d %H%M%S', errors='coerce')
+# Groupement par BlockId pour compter les occurrences d'Event ID
+event_counts_per_block = event_data.groupby('BlockId')['Event ID'].value_counts().unstack(fill_value=0)
 
-print("Lignes avec des dates mal formées :")
-print(df[df['Datetime'].isna()])
+# Renommer les colonnes pour les formater en E1, E2, ..., Ex
+event_counts_per_block.columns = [f'E{col}' for col in event_counts_per_block.columns]
 
-df = df.sort_values(by='Datetime')
+# Ajouter les colonnes Date et Time (on prend la première valeur pour chaque BlockId)
+date_time = event_data.groupby('BlockId')[['Date', 'Time']].first()
 
-def split_and_aggregate_by_cluster(df, time_interval='30T', error_threshold=5, anomaly_clusters=None):
-    """
-    Divise le DataFrame en morceaux temporels et compte les occurrences de chaque Cluster ID dans chaque morceau.
-    Ajoute une colonne 'Anomaly' basée sur la fréquence de certains 'Cluster ID' ou niveaux de log.
+# Ajouter les colonnes Date et Time au DataFrame des événements
+event_counts_per_block = event_counts_per_block.merge(
+    date_time,
+    left_index=True,  # Utiliser BlockId comme index
+    right_index=True
+)
 
-    :param df: Le DataFrame contenant les données de logs.
-    :param time_interval: La fréquence pour découper (par exemple, '30T' pour 30 minutes).
-    :param error_threshold: Le nombre de certains clusters qui déclenche l'étiquetage d'anomalie.
-    :param anomaly_clusters: Une liste d'IDs de clusters considérés comme anormaux.
-    :return: Un nouveau DataFrame où chaque ligne est un intervalle de temps et chaque colonne est un compte de Cluster ID,
-             avec une colonne 'Anomaly'.
-    """
-    
-    df.set_index('Datetime', inplace=True)
+# Ajouter la colonne "Anomaly" à partir de anomaly_label.csv
+event_counts_per_block = event_counts_per_block.merge(
+    anomaly_labels[['BlockId', 'Label']],
+    left_index=True,  # Utiliser BlockId comme index
+    right_on='BlockId',
+    how='left'
+)
 
-    cluster_counts = df.groupby([pd.Grouper(freq=time_interval), 'Cluster ID']).size().unstack(fill_value=0)
+# Convertir la colonne "Label" en binaire : 0 pour Normal, 1 pour Anomaly
+event_counts_per_block['Anomaly'] = event_counts_per_block['Label'].apply(lambda x: 1 if x == 'Anomaly' else 0)
 
-    cluster_counts['Anomaly'] = '0'
+# Supprimer la colonne "Label" (optionnel, car elle n'est plus utile)
+event_counts_per_block.drop(columns=['Label'], inplace=True)
 
-    for index, row in cluster_counts.iterrows():
-        if anomaly_clusters:
-            if row[anomaly_clusters].sum() >= error_threshold:
-                cluster_counts.at[index, 'Anomaly'] = '1'
-        else:
-            if row.sum() >= error_threshold:
-                cluster_counts.at[index, 'Anomaly'] = '1'
+# Réorganiser les colonnes : BlockId, Date, Time, E1 à Ex, Anomaly
+ordered_columns = ['BlockId', 'Date', 'Time'] + [col for col in event_counts_per_block.columns if col.startswith('E')] + ['Anomaly']
+event_counts_per_block = event_counts_per_block[ordered_columns]
 
-    if anomaly_clusters:
-        cluster_counts.drop(columns=anomaly_clusters, inplace=True)
+# Exporter le résultat final dans un fichier CSV
+event_counts_per_block.to_csv('HDFS_v1-aggregated.csv', index=False)
 
-    return cluster_counts
-
-time_interval = '30T'
-
-anomaly_clusters = [1]
-error_threshold = 3
-
-result_df = split_and_aggregate_by_cluster(df, time_interval, error_threshold, anomaly_clusters)
-
-result_df.reset_index(inplace=True)
-
-print(result_df)
-
-result_df.to_csv('parsed-hdfs-data-aggregated.csv', index=False)
+# Afficher un aperçu du DataFrame final
+print(event_counts_per_block.head())
